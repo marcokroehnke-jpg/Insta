@@ -763,7 +763,8 @@ tr:last-child td {
 
 .slot {
   display: grid;
-  grid-template-columns: 1fr 110px 1fr auto;
+  /* Breit genug auch für Browser, die die Uhrzeit im 12-Stunden-Format anzeigen. */
+  grid-template-columns: 1fr 132px 1fr auto;
   gap: 8px;
   align-items: center;
   margin-bottom: 8px;

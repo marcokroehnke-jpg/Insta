@@ -108,10 +108,37 @@ Voraussetzung: **Node.js 20 oder neuer**.
 ```bash
 npm install
 cp .env.example .env      # ANTHROPIC_API_KEY eintragen
+npm run demo              # optional: Demo-Daten zum Anschauen
 npm start
 ```
 
 Das Cockpit läuft dann auf <http://localhost:4000>.
+
+### Demo-Daten
+
+Beim ersten Start sind alle Ansichten leer, und gerade die Auswertung lässt sich
+ohne Zahlen schlecht beurteilen. `npm run demo` legt deshalb einen vollständigen
+Beispielbestand an: Marktprofil, drei Produktbilder, drei veröffentlichte
+Beiträge mit Insights, einen geplanten und einen Entwurf.
+
+Die Beispielzahlen sind so gewählt, dass der Käufer-Score seine Arbeit zeigt: der
+Ratgeber-Beitrag kommt auf 91, der Angebots-Beitrag auf 81 – und der freundliche
+Team-Beitrag mit den mit Abstand meisten Likes nur auf 23.
+
+```bash
+npm run demo              # legt an, wenn noch keine Daten da sind
+npm run demo -- --force   # überschreibt vorhandene Daten
+```
+
+Die Bilder erzeugt das Skript selbst (schematische Geräte-Motive, 1080 × 1350) –
+es lädt nichts nach und braucht keine Bildbibliothek.
+
+Zwei Dinge dazu: Der Server hält die Datenbank im Speicher, ein bereits laufender
+Server muss nach dem Einspielen also neu gestartet werden. Und die drei Beiträge
+gelten zwar als veröffentlicht, wurden aber nirgends gepostet – es sind keine
+Instagram-Zugangsdaten hinterlegt.
+
+Zum Aufräumen genügt es, den Ordner `data/` zu löschen.
 
 Alle Daten liegen in `./data` (`db.json` und der Ordner `uploads`). Für ein Backup
 genügt es, diesen Ordner zu sichern.
@@ -206,6 +233,9 @@ server/
   scheduler.js    Auto-Posting-Dienst und Slot-Planung
   funnel.js       Käufer-Score, Gewichtung, Empfehlungen
   http.js         Router, Body-Parsing, statische Dateien
+demo/
+  seed.js         Demo-Datenbestand (npm run demo)
+  png.js          Minimaler PNG-Encoder für die Beispielbilder
 public/
   index.html      Grundgerüst
   styles.css      Oberfläche
