@@ -1,11 +1,13 @@
 import { api } from './api.js';
 import { h, toast } from './ui.js';
 import { createStudioState, renderStudio } from './studio.js';
+import { createCompareState, renderCompareView } from './compare.js';
 import { renderDashboard, renderInsights, renderPlan, renderSettings, renderTexter } from './views.js';
 
 const VIEWS = {
   dashboard: renderDashboard,
   studio: renderStudio,
+  vergleich: renderCompareView,
   texter: renderTexter,
   plan: renderPlan,
   insights: renderInsights,
@@ -17,6 +19,7 @@ const app = {
   state: null,
   meta: {},
   studio: createStudioState(),
+  compare: createCompareState(),
   texter: { pillar: 'angebot', variantCount: 3, mediaIds: [] },
 
   async refresh() {

@@ -593,6 +593,26 @@ tr:last-child td {
   touch-action: none;
 }
 
+.compare-previews {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.compare-canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+@media (max-width: 1300px) {
+  .compare-previews {
+    grid-template-columns: 1fr;
+  }
+}
+
 #studioCanvas.dragging {
   cursor: grabbing;
 }

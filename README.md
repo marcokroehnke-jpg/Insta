@@ -33,6 +33,21 @@ Foto per Drag & Drop laden und direkt im Browser aufbereiten:
 
 Ausgabe ist immer 1080 px breit – das Format, das Instagram ohne Qualitätsverlust annimmt.
 
+### Preisvergleich
+
+Vergleichsgrafik „Was kostet eine Wäsche?" – Waschmittelkosten pro Waschladung
+als Balkendiagramm, gleichzeitig für Feed (4:5) und Story (9:16). Vorbelegt mit
+Miele UltraPhase 1 + 2 (TwinDos), Persil Universal Kraft-Gel und Ariel Universal+.
+
+- Packungspreis und Waschladungen je Produkt eintragen, der Wert pro Wäsche und
+  ein Jahreswert (Wäschen pro Jahr frei wählbar) werden daraus berechnet
+- das günstigste Produkt wird in der Markenfarbe hervorgehoben (oder ein frei gewähltes)
+- die Fußnote zeigt immer, aus welchem Preis und welcher Ladungszahl jeder Wert
+  stammt – vergleichende Werbung muss nachprüfbar sein (§ 6 UWG)
+
+Die Startwerte sind Online-Preise aus der Recherche. Vor dem Posten die eigenen
+Regalpreise eintragen.
+
 ### 2. Texter
 
 Claude sieht das aufbereitete Foto, kennt das Marktprofil und schreibt mehrere
