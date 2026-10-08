@@ -41,6 +41,10 @@ Miele UltraPhase 1 + 2 (TwinDos), Persil Universal Kraft-Gel und Ariel Universal
 
 - Packungspreis und Waschladungen je Produkt eintragen, der Wert pro Wäsche und
   ein Jahreswert (Wäschen pro Jahr frei wählbar) werden daraus berechnet
+- Dosierung: Produkte mit Dosierautomatik (TwinDos) zählen mit dem Packungswert,
+  von Hand dosierte bekommen den Mehrverbrauch drauf, der sich aus der Ersparnis
+  der Automatik ergibt (Standard 30 % nach Miele-Angabe „bis zu 30 %“, Öko-Institut
+  2013 → 43 % Mehrverbrauch von Hand) – in der Grafik als heller Balkenteil
 - das günstigste Produkt wird in der Markenfarbe hervorgehoben (oder ein frei gewähltes)
 - die Fußnote zeigt immer, aus welchem Preis und welcher Ladungszahl jeder Wert
   stammt – vergleichende Werbung muss nachprüfbar sein (§ 6 UWG)

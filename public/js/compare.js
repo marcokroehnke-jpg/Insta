@@ -10,36 +10,49 @@ import { RATIOS } from './studio.js';
  * Vergleichende Werbung muss nachprüfbar sein (§ 6 UWG), deshalb steht
  * unter der Grafik immer, aus welchem Preis und welcher Ladungszahl jeder
  * Wert berechnet wurde.
+ *
+ * Die Ladungszahl auf der Packung gilt nur bei Dosierung genau nach
+ * Anleitung. Von Hand wird in der Praxis mehr eingefüllt; eine Automatik
+ * wie Miele TwinDos dosiert nach Beladung. Deshalb rechnet die Grafik bei
+ * Handdosierung den Mehrverbrauch drauf, der sich aus der angegebenen
+ * Einsparung der Automatik ergibt, und zeigt ihn als hellen Balkenteil.
  */
 export function createCompareState() {
   return {
     headline: 'Was kostet eine Wäsche?',
-    subline: 'Waschmittelkosten pro Waschladung im Vergleich',
+    subline: 'Waschmittel pro Ladung: automatisch vs. von Hand dosiert',
     washesPerYear: 200,
     highlight: 'auto',
     asOf: new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' }),
     source: 'Online-Handelspreise',
+    // Miele: „bis zu 30 %“ Waschmittelersparnis ggü. manueller Dosierung,
+    // Gutachten Öko-Institut vom 06.09.2013. Obergrenze, kein Durchschnitt.
+    autoSaving: 30,
+    savingSource: 'Miele-Angabe „bis zu 30 %“, Öko-Institut 2013',
     products: [
       {
         brand: 'Miele',
         product: 'UltraPhase 1 + 2 für TwinDos',
         pack: 'Set je 3× UltraPhase 1 und 2',
         price: '91,90',
-        loads: '111'
+        loads: '111',
+        auto: true
       },
       {
         brand: 'Persil',
         product: 'Universal Kraft-Gel',
         pack: '',
         price: '17,23',
-        loads: '50'
+        loads: '50',
+        auto: false
       },
       {
         brand: 'Ariel',
         product: 'Universal+ flüssig',
         pack: '',
         price: '18,45',
-        loads: '70'
+        loads: '70',
+        auto: false
       }
     ]
   };
@@ -56,13 +69,27 @@ function parseNumber(value) {
 const euro = (n, digits = 2) =>
   `${n.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits })} €`;
 
-/** Kosten je Wäsche; Zeilen ohne gültigen Preis oder Ladungszahl fallen raus. */
+/**
+ * Faktor für den Mehrverbrauch bei Handdosierung. Spart die Automatik 30 %,
+ * braucht die Hand das 1 / 0,7 = 1,43-fache – also 43 % mehr, nicht 30 %.
+ */
+export function manualFactor(c) {
+  const saving = Math.min(90, Math.max(0, Number(c.autoSaving) || 0));
+  return 1 / (1 - saving / 100);
+}
+
+/**
+ * Kosten je Wäsche laut Packung (rated) und realistisch (perLoad).
+ * Zeilen ohne gültigen Preis oder Ladungszahl fallen raus.
+ */
 export function computeRows(c) {
+  const factor = manualFactor(c);
   return c.products
     .map((p, index) => {
       const price = parseNumber(p.price);
       const loads = parseNumber(p.loads);
-      return { ...p, index, price, loads, perLoad: price > 0 && loads > 0 ? price / loads : 0 };
+      const rated = price > 0 && loads > 0 ? price / loads : 0;
+      return { ...p, index, price, loads, rated, perLoad: p.auto ? rated : rated * factor };
     })
     .filter((r) => r.brand.trim() && r.perLoad > 0);
 }
@@ -130,7 +157,7 @@ export function renderCompare(canvas, c, ratio, settings, logoImg) {
 
   ctx.fillStyle = ink;
   ctx.textBaseline = 'alphabetic';
-  const headSize = Math.round(W * (story ? 0.085 : 0.072));
+  const headSize = Math.round(W * (story ? 0.085 : 0.068));
   ctx.font = `800 ${headSize}px sans-serif`;
   let y = headTop + headSize * 1.3;
   for (const line of wrap(ctx, c.headline, W - pad * 2)) {
@@ -153,32 +180,42 @@ export function renderCompare(canvas, c, ratio, settings, logoImg) {
   const noteSize = Math.round(W * 0.02);
   const noteLine = noteSize * 1.4;
   ctx.font = `500 ${noteSize}px sans-serif`;
+  const factor = manualFactor(c);
+  const anyManual = factor > 1 && rows.some((r) => !r.auto);
   const notes = [
-    `Pro Wäsche = Packungspreis ÷ Waschladungen laut Hersteller${
-      c.washesPerYear > 0 ? `, Jahreswert bei ${c.washesPerYear} Wäschen` : ''
-    }.`,
+    `Packungswert = Preis ÷ Waschladungen laut Hersteller${
+      c.washesPerYear > 0 ? `, Jahr = ${c.washesPerYear} Wäschen` : ''
+    }.${
+      anyManual
+        ? ` Heller Balkenteil: Annahme, Automatik spart ${c.autoSaving} %${
+            c.savingSource ? ` (${c.savingSource})` : ''
+          }, also ${Math.round((factor - 1) * 100)} % Mehrverbrauch von Hand.`
+        : ''
+    }`,
     ...rows.map(
       (r) =>
         `${r.brand} ${r.product}: ${euro(r.price)} ÷ ${r.loads.toLocaleString('de-DE')} WL${r.pack ? ` (${r.pack})` : ''}`
     ),
-    [c.source, c.asOf && `Stand ${c.asOf}`, 'Preise können abweichen.'].filter(Boolean).join(' · ')
-  ].flatMap((note) => wrap(ctx, note, W - pad * 2));
+    [c.source, c.asOf && `Stand ${c.asOf}`, 'Preise und Verbrauch können abweichen.'].filter(Boolean).join(' · ')
+  ]
+    .filter(Boolean)
+    .flatMap((note) => wrap(ctx, note, W - pad * 2));
   const footTop = H - barBar - (story ? H * 0.05 : H * 0.035) - notes.length * noteLine;
 
   ctx.fillStyle = muted;
   notes.forEach((line, i) => ctx.fillText(line, pad, footTop + noteSize + i * noteLine));
 
   // Balken
-  const brandSize = Math.round(W * (story ? 0.05 : 0.046));
-  const prodSize = Math.round(W * 0.027);
-  const barH = Math.round(W * (story ? 0.062 : 0.052));
+  const brandSize = Math.round(W * (story ? 0.05 : 0.042));
+  const prodSize = Math.round(W * (story ? 0.027 : 0.025));
+  const barH = Math.round(W * (story ? 0.062 : 0.046));
   const valueSize = Math.round(barH * 0.66);
   const gap = brandSize * 0.3;
-  const blockH = brandSize + gap + barH + (c.washesPerYear > 0 ? gap + prodSize * 1.1 : 0);
+  const blockH = brandSize + gap + barH + gap + prodSize * 1.1;
 
   // Erste Marke unter der Unterzeile, letzter Jahreswert mit Abstand über
   // der Fußnote, dazwischen gleichmäßig verteilt.
-  const chartTop = y + subSize * (story ? 2 : 0.9);
+  const chartTop = y + subSize * (story ? 2 : 0.6);
   const chartBottom = footTop - noteSize * (story ? 3 : 2);
   const between = rows.length > 1 ? (chartBottom - chartTop - blockH * rows.length) / (rows.length - 1) : 0;
   const labelReserve = W * 0.24;
@@ -202,8 +239,19 @@ export function renderCompare(canvas, c, ratio, settings, logoImg) {
     ctx.fill();
 
     const len = Math.max(barH, (r.perLoad / max) * barMax);
-    ctx.fillStyle = isHi ? brandColor : neutralBar;
-    roundedRect(ctx, pad, barTop, len, barH, barH / 2);
+    const ratedLen = Math.max(barH, (r.rated / max) * barMax);
+    const color = isHi ? brandColor : neutralBar;
+    if (len > ratedLen) {
+      // Mehrverbrauch von Hand: heller Teil hinter dem Packungswert
+      ctx.save();
+      ctx.globalAlpha = 0.38;
+      ctx.fillStyle = color;
+      roundedRect(ctx, pad, barTop, len, barH, barH / 2);
+      ctx.fill();
+      ctx.restore();
+    }
+    ctx.fillStyle = color;
+    roundedRect(ctx, pad, barTop, ratedLen, barH, barH / 2);
     ctx.fill();
 
     ctx.textBaseline = 'middle';
@@ -212,11 +260,12 @@ export function renderCompare(canvas, c, ratio, settings, logoImg) {
     ctx.fillText(euro(r.perLoad), pad + barMax + W * 0.025, barTop + barH / 2);
     ctx.textBaseline = 'alphabetic';
 
-    if (c.washesPerYear > 0) {
+    {
       ctx.fillStyle = muted;
       ctx.font = `500 ${prodSize}px sans-serif`;
       const year = Math.round(r.perLoad * c.washesPerYear);
-      ctx.fillText(`≈ ${euro(year, 0)} im Jahr`, pad, barTop + barH + gap + prodSize * 0.9);
+      const how = r.auto ? 'automatisch dosiert' : `von Hand dosiert · laut Packung ${euro(r.rated)}`;
+      ctx.fillText(c.washesPerYear > 0 ? `≈ ${euro(year, 0)} im Jahr · ${how}` : how, pad, barTop + barH + gap + prodSize * 0.9);
     }
 
     top += blockH + between;
@@ -292,7 +341,11 @@ export function renderCompareView(app) {
     const rows = computeRows(c);
     perLoadOut.forEach((out, i) => {
       const r = rows.find((x) => x.index === i);
-      out.textContent = r ? `= ${euro(r.perLoad)} pro Wäsche` : 'Preis und Waschladungen eintragen';
+      out.textContent = !r
+        ? 'Preis und Waschladungen eintragen'
+        : r.auto || r.perLoad === r.rated
+          ? `= ${euro(r.perLoad)} pro Wäsche`
+          : `= ${euro(r.rated)} laut Packung, ${euro(r.perLoad)} von Hand dosiert`;
     });
   };
 
@@ -322,6 +375,20 @@ export function renderCompareView(app) {
         { class: 'grid cols-2', style: 'gap:10px' },
         prodInput('price', 'Packungspreis (€)', { inputmode: 'decimal' }),
         prodInput('loads', 'Waschladungen', { inputmode: 'numeric' })
+      ),
+      h(
+        'label',
+        { class: 'switch', style: 'margin:4px 0 8px' },
+        h('input', {
+          type: 'checkbox',
+          checked: p.auto,
+          onchange: (e) => {
+            p.auto = e.target.checked;
+            updatePerLoad();
+            draw();
+          }
+        }),
+        h('span', {}, 'Dosiert automatisch (z. B. TwinDos)')
       ),
       perLoadOut[i]
     );
@@ -440,6 +507,32 @@ export function renderCompareView(app) {
             ),
             field('Hervorheben', highlightSelect)
           ),
+          h('hr', { class: 'sep' }),
+          h('h2', {}, 'Dosierung'),
+          h(
+            'div',
+            { class: 'grid cols-2', style: 'gap:10px' },
+            field(
+              'Ersparnis Automatik (%)',
+              input({
+                value: c.autoSaving,
+                inputmode: 'numeric',
+                oninput: (e) => {
+                  c.autoSaving = Math.min(90, Math.max(0, Math.round(parseNumber(e.target.value))));
+                  updatePerLoad();
+                  draw();
+                }
+              }),
+              'Gegenüber Handdosierung. 0 = nur Packungswerte.'
+            ),
+            field('Quelle der Ersparnis', text('savingSource'))
+          ),
+          h(
+            'p',
+            { class: 'tiny dim', style: 'margin:0 0 10px' },
+            'Miele nennt „bis zu 30 %“ – das ist die Obergrenze aus dem Öko-Institut-Gutachten von 2013, kein Durchschnitt. Ein vorsichtigerer Wert ist werberechtlich die sicherere Wahl.'
+          ),
+          h('hr', { class: 'sep' }),
           h(
             'div',
             { class: 'grid cols-2', style: 'gap:10px' },
